@@ -1,5 +1,8 @@
 from beancount.ingest.importer import ImporterProtocol
+from beancount.core.amount import Amount
 from typing import Dict
+from datetime import datetime, timedelta
+import warnings
 
 
 class LfBankImporter(ImporterProtocol):
@@ -7,24 +10,47 @@ class LfBankImporter(ImporterProtocol):
         self.account_info = account_info
         self.currency = currency
 
+        self.date_start = None
+        self.date_end = None
+
         super().__init__()
 
-    def identify(self, file):
+    def account_name(self, file):
         with open(file.name) as fd:
-            title_line = fd.readline().strip()
-            info_line = fd.readline().strip()
-        if not title_line or not info_line:
-            return False
+            line = fd.readline().strip()
+            # Second line contains account number
+            line = fd.readline().strip()
+        if not line:
+            return None
 
         try:
-            title = title_line.split(";")[0]
-            account_number = info_line.split(";")[0]
+            account_number = line.split(";")[0]
         except ValueError:
-            return False
+            return None
         else:
-            prefix = title.strip('"')
             account_number = account_number.strip('"')
-            return prefix == "Kontonummer" and self.account_info[account_number]
+            return self.account_info[account_number]
+
+    def identify(self, file):
+        return self.account_name(file) is not None
 
     def extract(self, file):
-        return []
+        account_name = self.account_name(file)
+        if account_name is None:
+            Warnings.warn(f"{file.name} is not compatible with LfBankImporter")
+            return []
+
+        with open(file.name) as fd:
+            for line_index, line in enumerate(fd):
+                if line_index < 4:
+                    continue
+
+                values = line.split(";")
+                self.parse_date(values[0])
+
+    def parse_dates(self, date_str):
+        date = datetime.strptime(date_str, "%Y-%m-%d").date()
+        if self.date_start and self.date_start > date:
+            self.date_start = date
+        if self.date_end and self.date_end < date:
+            self.date_end = date
