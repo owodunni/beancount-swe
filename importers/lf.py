@@ -71,7 +71,7 @@ class LfBankImporter(ImporterProtocol):
                 meta = data.new_metadata(file.name, index)
                 amount = Amount(to_decimal(line["Belopp"]), self.currency)
                 date = to_date(line["Transaktionsdatum"])
-                payee = line['Transaktionstyp']
+                payee = line["Transaktionstyp"]
                 description = line["Meddelande"]
 
                 postings = [data.Posting(account_name, amount, None, None, None, None)]
@@ -93,15 +93,17 @@ class LfBankImporter(ImporterProtocol):
             return entries
 
     def parse_dates(self, date):
-        if self.date_start and self.date_start > date:
+        if not self.date_start or self.date_start > date:
             self.date_start = date
-        if self.date_end and self.date_end < date:
+        if not self.date_end or self.date_end < date:
             self.date_end = date
 
     def file_account(self, file):
         return self.find_account_name(file)
 
     def file_date(self, file):
+        self.date_start = None
+        self.date_end = None
         self.extract(file)
         return self.date_end
 
