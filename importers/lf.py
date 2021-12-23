@@ -6,12 +6,16 @@ from typing import Dict
 from datetime import datetime, timedelta
 import warnings
 import csv
+import os.path
+
 
 def to_date(date_str):
     return datetime.strptime(date_str, "%Y-%m-%d").date()
 
+
 def to_decimal(amount_str: str):
-    return Decimal(amount_str.replace(' ','').replace(',','.'))
+    return Decimal(amount_str.replace(" ", "").replace(",", "."))
+
 
 class LfBankImporter(ImporterProtocol):
     def __init__(self, account_info: Dict[str, str], currency="SEK"):
@@ -23,7 +27,7 @@ class LfBankImporter(ImporterProtocol):
 
         super().__init__()
 
-    def account_name(self, file):
+    def find_account_name(self, file):
         with open(file.name) as fd:
             line = fd.readline().strip()
             # Second line contains account number
@@ -41,10 +45,10 @@ class LfBankImporter(ImporterProtocol):
                 return self.account_info[account_number]
 
     def identify(self, file):
-        return self.account_name(file) is not None
+        return self.find_account_name(file) is not None
 
     def extract(self, file):
-        account_name = self.account_name(file)
+        account_name = self.find_account_name(file)
         if account_name is None:
             warnings.warn(f"{file.name} is not compatible with LfBankImporter")
             return []
@@ -55,23 +59,33 @@ class LfBankImporter(ImporterProtocol):
             fd.readline()
             fd.readline()
 
-            reader = csv.DictReader(fd, delimiter=';', quoting=csv.QUOTE_MINIMAL)
+            reader = csv.DictReader(fd, delimiter=";", quoting=csv.QUOTE_MINIMAL)
 
             entries = []
 
             for index, line in enumerate(reader):
                 index += 3
-                print(line)
                 meta = data.new_metadata(file.name, index)
-                amount = Amount(to_decimal(line['Belopp']), self.currency)
-                date = to_date(line['Transaktionsdatum'])
-                description = line['Meddelande']
+                amount = Amount(to_decimal(line["Belopp"]), self.currency)
+                date = to_date(line["Transaktionsdatum"])
+                description = line["Meddelande"]
 
                 postings = [data.Posting(account_name, amount, None, None, None, None)]
 
                 entries.append(
-                    data.Transaction(meta, date, self.FLAG, description, description, data.EMPTY_SET, data.EMPTY_SET, postings)
+                    data.Transaction(
+                        meta,
+                        date,
+                        self.FLAG,
+                        description,
+                        description,
+                        data.EMPTY_SET,
+                        data.EMPTY_SET,
+                        postings,
+                    )
                 )
+                self.parse_dates(date)
+
             return entries
 
     def parse_dates(self, date):
@@ -79,3 +93,14 @@ class LfBankImporter(ImporterProtocol):
             self.date_start = date
         if self.date_end and self.date_end < date:
             self.date_end = date
+
+    def file_account(self, file):
+        return self.find_account_name(file)
+
+    def file_date(self, file):
+        self.extract(file)
+        return self.date_end
+
+    def file_name(self, file):
+        _, extension = os.path.splitext(os.path.basename(file.name))
+        return f"Länsförsäkringar{extension}"
