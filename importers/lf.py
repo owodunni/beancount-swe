@@ -29,7 +29,8 @@ class LfBankImporter(ImporterProtocol):
             return None
         else:
             account_number = account_number.strip('"')
-            return self.account_info[account_number]
+            if account_number in self.account_info:
+                return self.account_info[account_number]
 
     def identify(self, file):
         return self.account_name(file) is not None
@@ -37,7 +38,7 @@ class LfBankImporter(ImporterProtocol):
     def extract(self, file):
         account_name = self.account_name(file)
         if account_name is None:
-            Warnings.warn(f"{file.name} is not compatible with LfBankImporter")
+            warnings.warn(f"{file.name} is not compatible with LfBankImporter")
             return []
 
         with open(file.name) as fd:
