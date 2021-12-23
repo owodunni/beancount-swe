@@ -1,9 +1,17 @@
+from decimal import Decimal
 from beancount.ingest.importer import ImporterProtocol
 from beancount.core.amount import Amount
+from beancount.core import data
 from typing import Dict
 from datetime import datetime, timedelta
 import warnings
+import csv
 
+def to_date(date_str):
+    return datetime.strptime(date_str, "%Y-%m-%d").date()
+
+def to_decimal(amount_str: str):
+    return Decimal(amount_str.replace(' ','').replace(',','.'))
 
 class LfBankImporter(ImporterProtocol):
     def __init__(self, account_info: Dict[str, str], currency="SEK"):
@@ -42,15 +50,31 @@ class LfBankImporter(ImporterProtocol):
             return []
 
         with open(file.name) as fd:
-            for line_index, line in enumerate(fd):
-                if line_index < 4:
-                    continue
+            # Skip first 3 lines containing metadata
+            fd.readline()
+            fd.readline()
+            fd.readline()
 
-                values = line.split(";")
-                self.parse_date(values[0])
+            reader = csv.DictReader(fd, delimiter=';', quoting=csv.QUOTE_MINIMAL)
 
-    def parse_dates(self, date_str):
-        date = datetime.strptime(date_str, "%Y-%m-%d").date()
+            entries = []
+
+            for index, line in enumerate(reader):
+                index += 3
+                print(line)
+                meta = data.new_metadata(file.name, index)
+                amount = Amount(to_decimal(line['Belopp']), self.currency)
+                date = to_date(line['Transaktionsdatum'])
+                description = line['Meddelande']
+
+                postings = [data.Posting(account_name, amount, None, None, None, None)]
+
+                entries.append(
+                    data.Transaction(meta, date, self.FLAG, description, description, data.EMPTY_SET, data.EMPTY_SET, postings)
+                )
+            return entries
+
+    def parse_dates(self, date):
         if self.date_start and self.date_start > date:
             self.date_start = date
         if self.date_end and self.date_end < date:
