@@ -28,10 +28,13 @@ class LfBankImporter(ImporterProtocol):
         super().__init__()
 
     def find_account_name(self, file):
-        with open(file.name) as fd:
-            line = fd.readline().strip()
-            # Second line contains account number
-            line = fd.readline().strip()
+        try:
+            with open(file.name) as fd:
+                line = fd.readline().strip()
+                # Second line contains account number
+                line = fd.readline().strip()
+        except Exception:
+            return None
         if not line:
             return None
 
