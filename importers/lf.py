@@ -1,12 +1,13 @@
-from decimal import Decimal
-from beancount.ingest.importer import ImporterProtocol
-from beancount.core.amount import Amount
-from beancount.core import data
-from typing import Dict
-from datetime import datetime, timedelta
-import warnings
 import csv
 import os.path
+import warnings
+from datetime import datetime
+from decimal import Decimal
+from typing import Dict
+
+from beancount.core import data
+from beancount.core.amount import Amount
+from beancount.ingest.importer import ImporterProtocol
 
 
 def to_date(date_str):
@@ -62,7 +63,9 @@ class LfBankImporter(ImporterProtocol):
             fd.readline()
             fd.readline()
 
-            reader = csv.DictReader(fd, delimiter=";", quoting=csv.QUOTE_MINIMAL)
+            reader = csv.DictReader(
+                fd, delimiter=";", quoting=csv.QUOTE_MINIMAL
+            )
 
             entries = []
 
@@ -74,7 +77,9 @@ class LfBankImporter(ImporterProtocol):
                 payee = line["Transaktionstyp"]
                 description = line["Meddelande"]
 
-                postings = [data.Posting(account_name, amount, None, None, None, None)]
+                postings = [
+                    data.Posting(account_name, amount, None, None, None, None)
+                ]
 
                 entries.append(
                     data.Transaction(
