@@ -74,8 +74,8 @@ class LfBankImporter(ImporterProtocol):
                 meta = data.new_metadata(file.name, index)
                 amount = Amount(to_decimal(line["Belopp"]), self.currency)
                 date = to_date(line["Transaktionsdatum"])
-                payee = line["Transaktionstyp"]
-                description = line["Meddelande"]
+                description = line["Transaktionstyp"]
+                payee = line["Meddelande"]
 
                 postings = [
                     data.Posting(account_name, amount, None, None, None, None)
