@@ -9,6 +9,9 @@ from datetime import date
 account_number = "1234"
 account_name = "Assets:Lf:Checking"
 
+account_number2 = "12345678913"
+account_name2 = "Assets:Lf:Savings"
+
 tx_header = dedent(
     """
     "Kontonummer";"Kontonamn";"";"Saldo";"Tillgängligt belopp"
@@ -25,6 +28,12 @@ tx_columns = dedent(
 tx_single = dedent(
     """
     "2021-04-27";"2021-04-27";"Betalning";"Netflix";"-99,00"
+    """
+).strip()
+
+tx_single_known = dedent(
+    """
+    "2021-04-27";"2021-04-27";"Överföring";"1234.56.789.13";"-99,55"
     """
 ).strip()
 
@@ -47,7 +56,9 @@ def tmp_file(tmp_path):
 
 @pytest.fixture
 def importer():
-    return LfBankImporter({account_number: account_name})
+    return LfBankImporter(
+        {account_number: account_name, account_number2: account_name2}
+    )
 
 
 def test_identify_not_correct(tmp_file, importer):
@@ -97,6 +108,21 @@ def test_extract_single_tx(tmp_file, importer):
 
     assert len(transaction.postings) == 1
     assert_posting(transaction.postings[0], Decimal("-99"))
+
+
+def test_extract_single_tx_other_account(tmp_file, importer):
+    tmp_file.write_text(create_tx(tx_single_known))
+
+    with tmp_file.open() as fd:
+        directives = importer.extract(fd)
+
+    assert len(directives) == 1
+    transaction = directives[0]
+    assert_tx(transaction, account_name2, "Överföring", date(2021, 4, 27))
+
+    assert len(transaction.postings) == 2
+    assert_posting(transaction.postings[0], Decimal("-99.55"))
+    assert_posting(transaction.postings[1], Decimal("99.55"))
 
 
 def test_extract_multiple_tx(tmp_file, importer):
