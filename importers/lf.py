@@ -51,7 +51,15 @@ class LfBankImporter(ImporterProtocol):
     def identify(self, file):
         return self.find_account_name(file) is not None
 
+    def to_known_account(self, payee: str):
+        number = payee.replace(".", "")
+        if number in self.account_info:
+            return self.account_info[number], True
+        return payee, False
+
     def extract(self, file):
+        self.date_start = None
+        self.date_end = None
         account_name = self.find_account_name(file)
         if account_name is None:
             warnings.warn(f"{file.name} is not compatible with LfBankImporter")
@@ -75,11 +83,17 @@ class LfBankImporter(ImporterProtocol):
                 amount = Amount(to_decimal(line["Belopp"]), self.currency)
                 date = to_date(line["Transaktionsdatum"])
                 description = line["Transaktionstyp"]
-                payee = line["Meddelande"]
+                payee, is_known_account = self.to_known_account(
+                    line["Meddelande"]
+                )
 
                 postings = [
                     data.Posting(account_name, amount, None, None, None, None)
                 ]
+                if is_known_account:
+                    postings.append(
+                        data.Posting(payee, -amount, None, None, None, None)
+                    )
 
                 entries.append(
                     data.Transaction(
@@ -107,8 +121,6 @@ class LfBankImporter(ImporterProtocol):
         return self.find_account_name(file)
 
     def file_date(self, file):
-        self.date_start = None
-        self.date_end = None
         self.extract(file)
         return self.date_end
 
