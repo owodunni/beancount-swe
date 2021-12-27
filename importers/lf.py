@@ -1,7 +1,8 @@
 import csv
 import os.path
+import re
 import warnings
-from datetime import datetime
+from datetime import datetime, timedelta
 from decimal import Decimal
 from typing import Dict
 
@@ -28,28 +29,33 @@ class LfBankImporter(ImporterProtocol):
 
         super().__init__()
 
-    def find_account_name(self, file):
+    def extract_meta_data(self, file):
         try:
             with open(file.name) as fd:
                 line = fd.readline().strip()
                 # Second line contains account number
                 line = fd.readline().strip()
         except Exception:
-            return None
+            return None, None
         if not line:
-            return None
+            return None, None
 
         try:
-            account_number = line.split(";")[0]
+            meta_data = line.split(";")
+            account_number = meta_data[0].strip('"')
+            account_balance = to_decimal(meta_data[3].strip('"'))
         except ValueError:
-            return None
-        else:
-            account_number = account_number.strip('"')
-            if account_number in self.account_info:
-                return self.account_info[account_number]
+            return None, None
+
+        return account_number, Amount(account_balance, self.currency)
+
+    def find_account_name(self, account_number):
+        if account_number in self.account_info:
+            return self.account_info[account_number]
 
     def identify(self, file):
-        return self.find_account_name(file) is not None
+        account_number, _ = self.extract_meta_data(file)
+        return self.find_account_name(account_number) is not None
 
     def to_known_account(self, payee: str):
         number = payee.replace(".", "")
@@ -57,13 +63,36 @@ class LfBankImporter(ImporterProtocol):
             return self.account_info[number], True
         return payee, False
 
+    def extract_date(self, file_name: str):
+        """Returns a tuple containing a is_latest, end_date, start_date"""
+        dates = re.findall(r"\d{4}-\d{2}-\d{2}", file_name)
+        if not dates:
+            return False, None, None
+        if "senaste" in file_name:
+            return True, to_date(dates[0]), None
+        return False, to_date(dates[0]), to_date(dates[1])
+
     def extract(self, file):
-        self.date_start = None
-        self.date_end = None
-        account_name = self.find_account_name(file)
+        account_number, account_balance = self.extract_meta_data(file)
+        account_name = self.find_account_name(account_number)
         if account_name is None:
             warnings.warn(f"{file.name} is not compatible with LfBankImporter")
             return []
+
+        is_latests, self.date_end, _ = self.extract_date(file.name)
+
+        entries = []
+        if is_latests:
+            entries.append(
+                data.Balance(
+                    data.new_metadata(file.name, 1),
+                    self.date_end + timedelta(days=1),
+                    account_name,
+                    account_balance,
+                    None,
+                    None,
+                )
+            )
 
         with open(file.name) as fd:
             # Skip first 3 lines containing metadata
@@ -74,8 +103,6 @@ class LfBankImporter(ImporterProtocol):
             reader = csv.DictReader(
                 fd, delimiter=";", quoting=csv.QUOTE_MINIMAL
             )
-
-            entries = []
 
             for index, line in enumerate(reader):
                 index += 3
@@ -107,15 +134,8 @@ class LfBankImporter(ImporterProtocol):
                         postings,
                     )
                 )
-                self.parse_dates(date)
 
             return entries
-
-    def parse_dates(self, date):
-        if not self.date_start or self.date_start > date:
-            self.date_start = date
-        if not self.date_end or self.date_end < date:
-            self.date_end = date
 
     def file_account(self, file):
         return self.find_account_name(file)
