@@ -138,7 +138,8 @@ class LfBankImporter(ImporterProtocol):
             return entries
 
     def file_account(self, file):
-        return self.find_account_name(file)
+        account_number, _ = self.extract_meta_data(file)
+        return self.find_account_name(account_number)
 
     def file_date(self, file):
         self.extract(file)
