@@ -108,7 +108,7 @@ class LfBankImporter(ImporterProtocol):
                 index += 3
                 meta = data.new_metadata(file.name, index)
                 amount = Amount(to_decimal(line["Belopp"]), self.currency)
-                date = to_date(line["Transaktionsdatum"])
+                date = to_date(line["Bokföringsdatum"])
                 description = line["Transaktionstyp"]
                 payee, is_known_account = self.to_known_account(
                     line["Meddelande"]
