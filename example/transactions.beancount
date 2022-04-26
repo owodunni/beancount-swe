@@ -1,0 +1,37 @@
+;; -*- mode: org; mode: beancount; -*-
+
+* Options
+option "title" "Beancount Ledger"
+option "operating_currency" "SEK"
+option "documents" "documents/"
+
+* Income
+2022-01-01 open Income:Owodunni
+
+* Bank Accounts
+2022-01-01 open Equity:Opening-Balances
+
+2022-01-01 open Assets:Lf:Checking
+2022-01-01 open Assets:Lf:Buffert
+
+2022-01-01 * "Initial balance" ""
+  Assets:Lf:Checking    13370.00 SEK
+  Equity:Opening-Balances
+
+* Expenses:Home
+2022-02-01 open Expenses:Home:Rent
+2022-02-01 open Expenses:Living:Food
+2022-02-01 open Expenses:Transport
+
+* Budget recuring
+2022-01-01 custom "budget" Expenses:Transport "monthly" 1000.00 SE
+2022-01-01 custom "budget" Expenses:Living:Food "monthly" 3000.00 SE
+2022-01-01 custom "budget" Expenses:Living:Home:Rent "monthly" 6000.00 SE
+
+2022-01-02 * "Assets:Lf:Checking" "Överföring"
+  Assets:Lf:Checking        -1300.00 SEK
+  Assets:Lf:Buffert          1300.00 SEK
+
+2022-01-03 * "Tack för att du väljer en klim" "Swish till SJ AB"
+  Assets:Lf:Buffert        -1200.00 SEK
+  Expenses:Transport
