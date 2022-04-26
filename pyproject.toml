@@ -27,9 +27,16 @@ keywords = ["banking", "beancount", "cli-accounting", "finance", "Länsförsäkr
 
 [tool.poetry.dependencies]
 python = "^3.7"
+beancount = "^2.3.5"
 
 [tool.poetry.dev-dependencies]
-pytest = "^5.2"
+pytest = "^7.1.2"
+black = "^22.3.0"
+flake8 = "^4.0.1"
+isort = "^5.10.1"
+
+[tool.black]
+line-length = 79
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
