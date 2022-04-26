@@ -5,7 +5,7 @@ from textwrap import dedent
 import pytest
 from beancount.core.data import Balance, Transaction
 
-from importers.lf import LfBankImporter
+from beancount_swe import LfBankImporter
 
 account_number = "1234"
 account_name = "Assets:Lf:Checking"
