@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "beancount-swe"
-version = "0.1.0"
+version = "0.1.1"
 description = "Beancount Importer fro csv exports from Swedish banks. Supports Länsförsäkringar"
 readme="README.md"
 authors = ["Alexander Poole <alex.o.poole@gmail.com>"]
