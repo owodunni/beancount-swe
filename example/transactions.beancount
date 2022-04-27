@@ -3,7 +3,6 @@
 * Options
 option "title" "Beancount Ledger"
 option "operating_currency" "SEK"
-option "documents" "documents/"
 
 * Income
 2022-01-01 open Income:Owodunni
@@ -19,9 +18,9 @@ option "documents" "documents/"
   Equity:Opening-Balances
 
 * Expenses:Home
-2022-02-01 open Expenses:Home:Rent
-2022-02-01 open Expenses:Living:Food
-2022-02-01 open Expenses:Transport
+2022-01-01 open Expenses:Home:Rent
+2022-01-01 open Expenses:Living:Food
+2022-01-01 open Expenses:Transport
 
 * Budget recuring
 2022-01-01 custom "budget" Expenses:Transport "monthly" 1000.00 SE
