@@ -1,0 +1,10 @@
+option "title" "Alice Finances"
+option "operating_currency" "SEK"
+
+
+2023-09-01 open Assets:IcaBanken:CreditCard
+
+2023-09-01 * "Initialize Assets:IcaBanken:CreditCard"
+    Assets:IcaBanken:CreditCard 18134.50 SEK
+    Equity:Opening-Balances
+
